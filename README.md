@@ -12,3 +12,5 @@ Contains the following features:
 -Volume Slider
 
 Required: FFmpeg - https://ffmpeg.org
+
+Uploader ID Error fix - https://www.youtube.com/watch?v=tMtszkwxo48
