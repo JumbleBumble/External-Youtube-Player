@@ -1,6 +1,8 @@
 # JExternalYoutubePlayer
 Jumbles External Youtube Music Player
 
+Works with Youtube & Youtube Music Playlist URLs + Song Search
+
 Contains the following features:
 
 -Play song by name search
