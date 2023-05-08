@@ -7,6 +7,8 @@ Contains the following features:
 
 -Play Playlist (Must enter a playlist URL)
 
+-Download (Can use with Individual songs with name search & Playlist URLS)
+
 -Stop & Skip buttons
  
 -Volume Slider
