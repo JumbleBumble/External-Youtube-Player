@@ -10,3 +10,5 @@ Contains the following features:
 -Stop & Skip buttons
  
 -Volume Slider
+
+Dependencies: FFmpeg - https://ffmpeg.org
