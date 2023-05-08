@@ -11,4 +11,4 @@ Contains the following features:
  
 -Volume Slider
 
-Dependencies: FFmpeg - https://ffmpeg.org
+Required: FFmpeg - https://ffmpeg.org
