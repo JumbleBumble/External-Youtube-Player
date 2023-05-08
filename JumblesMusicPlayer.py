@@ -8,6 +8,7 @@ from PIL import Image, ImageTk
 import io
 from io import BytesIO
 from pycaw.pycaw import AudioUtilities, ISimpleAudioVolume
+import os
 
 
 window = tk.Tk()
@@ -201,6 +202,72 @@ def skipfunc():
             print('Process killed')
         except subprocess.CalledProcessError as e:
             print(f"Failed to kill process with pid {process.pid}: {e}")
+    
+def downloadfunc(videoname):
+    global label
+    if 'list' in videoname:
+        ydl_opts = {
+            'outtmpl': os.path.join(os.path.dirname(os.path.abspath(__file__)), '%(title)s.%(ext)s'),
+            'format': 'bestaudio/best',
+            'postprocessors': [{
+                'key': 'FFmpegExtractAudio',
+                'preferredcodec': 'mp3',
+                'preferredquality': '192',
+            }],
+            'ignoreerrors': True,
+        }
+        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+            try:
+                playlist = ydl.extract_info(videoname, download=False)
+            except youtube_dl.DownloadError:
+                print("Couldn't find any Playlist. (DOWNLOAD ERROR)")
+                return
+            except Exception as e:
+                print(e)
+                print("An error occurred while trying to find the Playlist.")
+                return
+            for song in playlist['entries']:
+                try:
+                    url = song['formats'][0]['url']
+                except Exception as e:
+                    print(e)
+                    print("An error occurred while trying to play the video, Skipping to next in Playlist (URL ERROR)")
+                yurl = f'https://www.youtube.com/watch?v={song["id"]}'
+                ThumbURL = f'https://img.youtube.com/vi/{song["id"]}/0.jpg'
+                with urllib.request.urlopen(ThumbURL) as u:
+                    raw_data = u.read()
+                
+                    im = Image.open(io.BytesIO(raw_data))
+                    photo = ImageTk.PhotoImage(im)
+                    imagelabel.config(image = photo)
+                    imagelabel.config(width=200, height=200)
+                label['text'] = 'Downloading ', song['title'], '...'
+                ydl.download([yurl])
+                label['text'] = 'Downloaded to ', {str(os.path.join(os.path.dirname(os.path.abspath(__file__))))}
+        
+        label['text'] = 'Downloaded to ', {str(os.path.join(os.path.dirname(os.path.abspath(__file__))))}
+    else:
+        ydl_opts = {
+        'outtmpl': os.path.join(os.path.dirname(os.path.abspath(__file__)), '%(title)s.%(ext)s'),
+        'format': 'bestaudio/best',
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'mp3',
+            'preferredquality': '192',
+        }],
+        'ignoreerrors': True,
+    }
+        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(f'ytsearch:{videoname}', download=False)
+            url = f'https://www.youtube.com/watch?v={info["entries"][0]["id"]}'
+            label['text'] = 'Downloading ', info['entries'][0]['title'], '...'
+            ydl.download([url])
+            label['text'] = 'Downloaded to ', {str(os.path.join(os.path.dirname(os.path.abspath(__file__))))}
+        
+def threadstarto():
+    videoname = entry.get()
+    thread = threading.Thread(target=downloadfunc,args=(videoname,))
+    thread.start()
        
 
 entry = ttk.Entry(master = window)
@@ -212,8 +279,12 @@ entry.bind('<Return>', entrycheck)
 button = tk.Button(window, text = 'Play song by name search', bg="black", fg="white", command = buttonfunc)
 button.pack()
 
+
 button22 = tk.Button(master = window, text = 'Play Playlist', bg="black", fg="white", command = threadstart)
 button22.pack()
+
+downloadbutton = tk.Button(window, text = 'Download', bg="black", fg="white", command = threadstarto)
+downloadbutton.pack()
 
 Stopbutton = tk.Button(master = window, text = 'Stop', bg="black", fg="white", command = stopfunc)
 Stopbutton.pack()
