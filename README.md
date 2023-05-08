@@ -5,7 +5,7 @@ Contains the following features:
 
 -Play song by name search
 
--Play Playlist
+-Play Playlist (Must enter a playlist URL)
 
 -Stop & Skip buttons
  
