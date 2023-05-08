@@ -14,8 +14,8 @@ window = tk.Tk()
 window.title('Jumbles Music Player')
 window.configure(bg='black')
 style = ttk.Style()
-style.configure('Custom.TButton', background='black')
-label = ttk.Label(master = window,style='Custom.TButton')
+style.configure('Custom.TButton', background='black', foreground = 'white')
+label = tk.Label(master = window,bg="black", fg="white")
 label.pack()
 
 
@@ -209,16 +209,16 @@ entry.pack()
 entry.bind('<Return>', entrycheck)
 
 
-button = ttk.Button(master = window, text = 'Play song by name search', style='Custom.TButton', command = buttonfunc)
+button = tk.Button(window, text = 'Play song by name search', bg="black", fg="white", command = buttonfunc)
 button.pack()
 
-button22 = ttk.Button(master = window, text = 'Play Playlist', style='Custom.TButton', command = threadstart)
+button22 = tk.Button(master = window, text = 'Play Playlist', bg="black", fg="white", command = threadstart)
 button22.pack()
 
-Stopbutton = ttk.Button(master = window, text = 'Stop', style='Custom.TButton', command = stopfunc)
+Stopbutton = tk.Button(master = window, text = 'Stop', bg="black", fg="white", command = stopfunc)
 Stopbutton.pack()
 
-Skipbutton = ttk.Button(master = window, text = 'Skip', style='Custom.TButton', command = skipfunc)
+Skipbutton = tk.Button(master = window, text = 'Skip', bg="black", fg="white", command = skipfunc)
 Skipbutton.pack()
 
 
@@ -230,7 +230,7 @@ def set_volume(volume):
         volume = session._ctl.QueryInterface(ISimpleAudioVolume)
         if session.Process and session.Process.name() == "ffplay.exe":
             volume.SetMasterVolume(volume_level, None)
-volume_slider = tk.Scale(window, from_=0, to=100, orient=tk.HORIZONTAL, command=set_volume)
+volume_slider = tk.Scale(window, from_=0, to=100,bg="black", fg="white", orient=tk.HORIZONTAL, command=set_volume)
 volume_slider.pack()
 
 window.mainloop()
