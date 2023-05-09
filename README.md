@@ -17,4 +17,4 @@ Contains the following features:
 
 Required: FFmpeg - https://ffmpeg.org
 
-Uploader ID Error fix - https://www.youtube.com/watch?v=tMtszkwxo48
+Uploader ID Error fix - https://www.youtube.com/watch?v=tMtszkwxo48 (If compiling from source, the release already contains this fix)
