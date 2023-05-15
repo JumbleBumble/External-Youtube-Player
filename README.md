@@ -27,3 +27,5 @@ Equalizers - Currently only has Bass and Treble sliders but might add the whole 
 Volume Slider
 
 Saving - Currently the Equalizer sliders & Volume sliders will automatically save for you
+
+Keybinds - Right click Stop, Pause, Skip or Resume then press any letter or number to assign it. To use keybinds hold shift then press the key you assigned
