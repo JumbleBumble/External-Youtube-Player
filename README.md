@@ -16,7 +16,7 @@ Play Song by Search - Searches youtube for a video of the specified name and pla
 
 Song Amount - Lets you choose how many videos to search & play, or if playing a playlist lets you define the number of songs to play from that playlist
 
-Play Playlist - Allows you to play Youtube Playlists, can either use regular Youtube URLS or Youtube Music URLS.
+Play Playlist - Allows you to play Youtube Playlists, can either use regular Youtube URLs or Youtube Music URLs.
 
 Download - Can insert playlist URL and download whole playlist or if playing music can download the song that's currently playing
 
@@ -26,6 +26,6 @@ Equalizers - Currently only has Bass and Treble sliders but might add the whole 
 
 Volume Slider
 
-Saving - Currently the Equalizer sliders & Volume slider will automatically save for you
+Saving - Currently the Equalizer sliders & volume slider will automatically save for you
 
 Keybinds - Right click Stop, Pause, Skip or Resume then press any letter or number to assign it. To use keybinds hold shift then press the key you assigned
