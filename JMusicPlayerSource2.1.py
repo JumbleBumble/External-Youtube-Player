@@ -219,7 +219,7 @@ def PlaySearch(videoname):
                 title = info['entries'][0]['title']
                 Label.configure(text=f'Playing: {title}')
             except youtube_dl.DownloadError:
-                NotificationWindow(text=f'youtube_dl.DownloadError: {e}',nclass='Warning')
+                NotificationWindow(text=f'youtube_dl.DownloadError',nclass='Warning')
                 return
             except Exception as e:
                 NotificationWindow(text=f'Error: {e}',nclass='Warning')
@@ -915,4 +915,3 @@ activitythread.start()
 
 ctk.set_appearance_mode("dark")
 root.mainloop()
-
