@@ -15,6 +15,20 @@ import math
 import time
 import keyboard
 import sys
+import discordsdk as dsdk
+
+app = dsdk.Discord(1108544841647927297, dsdk.CreateFlags.default)
+
+activity_manager = app.get_activity_manager()
+
+activity = dsdk.Activity()
+
+
+def callback(result):
+    if result == dsdk.Result.ok:
+        print("Successfully set the activity!")
+    else:
+        raise Exception(result)
 
 
 if getattr(sys, 'frozen', False): 
@@ -64,6 +78,7 @@ else:
     volume = 100
 
 progress_path = os.path.join(folder_path, 'progress.txt')
+error_path = os.path.join(folder_path, 'videoerror.txt')
 
 equalizer_path = os.path.join(folder_path, 'Equalizer.json')
 if os.path.exists(equalizer_path):
@@ -159,6 +174,60 @@ VideoEntry = ctk.CTkEntry(MainFrame,width=250,placeholder_text="Search/URL")
 VideoEntry.grid(column = 0, row = 2,columnspan=2,sticky="nsew")
 
 
+ReplayCount = 0
+LastReplay = None
+def ResumePlayback(time_positiono):
+    global process
+    global CurrentVideo
+    global CurrentURL
+    global playing
+    global volume
+    global progress_path
+    global EqualizerCheck
+    global Bass
+    global Treble
+    global Paused
+    global activity
+    global error_path
+    global ReplayCount
+    global LastReplay
+    if LastReplay == CurrentURL:
+        ReplayCount += 1
+    else:
+        ReplayCount = 0
+    LastReplay = CurrentURL
+    print('REPLAYCOUNT----------------------'+str(ReplayCount))
+    if ReplayCount >= 4:
+        ReplayCount = 0
+        return
+    if EqualizerCheck:
+        cmd = f'ffmpeg -i "{CurrentURL}" -vn -ss {time_positiono} -af "equalizer=f=60:width_type=h:width=50:g={Bass},equalizer=f=8000:width_type=h:width=50:g={Treble}" -acodec libopus -b:a 96k -f opus -nostdin - -progress {progress_path} 2> {error_path} | ffplay -nodisp -autoexit -'
+    else:
+        cmd = f'ffmpeg -i "{CurrentURL}" -vn -ss {time_positiono} -acodec libopus -b:a 96k -f opus -nostdin - -progress {progress_path} 2> {error_path} | ffplay -nodisp -autoexit -'
+
+    process = subprocess.Popen(cmd, shell=True)
+    set_volume(volume)
+    process.wait()
+    with open(error_path, 'r') as file:
+        error_output = file.read()
+    with open(error_path, 'w'):
+        pass
+    if 'Error demuxing' in error_output:
+        print('ERROR FOUND (IN REPLAY FUNC)')
+        matches = re.findall(r'time=([0-9:.]+)', error_output)
+        if len(matches) > 0:
+            time_position = matches[-1]
+            if ReplayCount >= 1:
+                time_split = time_position.split(':')
+                seconds_parts = time_split[2].split(".")
+                seconds_parts[0] = "{:02}".format(int(seconds_parts[0]) + 20)
+                time_split[2] = ".".join(seconds_parts)
+                time_position = ":".join(time_split)
+                ResumePlayback(time_position)
+            else:
+                ResumePlayback(time_position)
+
+
 
 
 
@@ -185,6 +254,8 @@ def PlaySearch(videoname):
     global Bass
     global Treble
     global Paused
+    global activity
+    global error_path
 
     Label.configure(text='Downloading Stream..')
 
@@ -204,13 +275,15 @@ def PlaySearch(videoname):
                 title = info['entries'][0]['title']
                 Label.configure(text=f'Playing: {title}')
             except youtube_dl.DownloadError:
-                NotificationWindow(text=f'youtube_dl.DownloadError: {e}',nclass='Warning')
+                NotificationWindow(text=f'youtube_dl.DownloadError',nclass='Warning')
                 return
             except Exception as e:
                 NotificationWindow(text=f'Error: {e}',nclass='Warning')
                 return
             url = info['entries'][0]['url']
             CurrentVideo = info['entries'][0]['title']
+            activity.state = f"Playing: {CurrentVideo}"
+            activity_manager.update_activity(activity, callback)
             CurrentURL = info['entries'][0]['url']
             ThumbID = info['entries'][0]['id']
             ThumbURL = f'https://img.youtube.com/vi/{ThumbID}/0.jpg'
@@ -222,13 +295,29 @@ def PlaySearch(videoname):
                 imagelabel.configure(image = photo)
             if EqualizerCheck:
                 #cmd = f'ffmpeg -i "{url}" -vn -acodec libopus -b:a 96k -f opus -nostdin - | ffplay -nodisp -autoexit -'
-                cmd = f'ffmpeg -i "{url}" -vn -af "equalizer=f=60:width_type=h:width=50:g={Bass},equalizer=f=8000:width_type=h:width=50:g={Treble}" -acodec libopus -b:a 96k -f opus -nostdin - -progress {progress_path} | ffplay -nodisp -autoexit -'
+                cmd = f'ffmpeg -i "{url}" -vn -af "equalizer=f=60:width_type=h:width=50:g={Bass},equalizer=f=8000:width_type=h:width=50:g={Treble}" -acodec libopus -b:a 96k -f opus -nostdin - -progress {progress_path} 2> {error_path} | ffplay -nodisp -autoexit -'
                 #cmd = f'ffmpeg -i "{url}" -vn -acodec libopus -b:a 96k -f opus -nostdin - -progress {progress_path} | ffplay -nodisp -autoexit -'
             else:
-                cmd = f'ffmpeg -i "{url}" -vn -acodec libopus -b:a 96k -f opus -nostdin - -progress {progress_path} | ffplay -nodisp -autoexit -'
+                cmd = f'ffmpeg -i "{url}" -vn -acodec libopus -b:a 96k -f opus -nostdin - -progress {progress_path} 2> {error_path} | ffplay -nodisp -autoexit -'
+
             process = subprocess.Popen(cmd, shell=True)
             set_volume(volume)
             process.wait()
+            with open(error_path, 'r') as file:
+                error_output = file.read()
+            with open(error_path, 'w'):
+                pass
+            if 'Error demuxing' in error_output:
+                print('ERROR FOUND')
+                if os.path.exists(progress_path):
+                    with open(progress_path, 'r') as f:
+                        progress_data = f.read()
+                    matches = re.findall(r'time=([0-9:.]+)', progress_data)
+                    if len(matches) > 0:
+                        time_position = matches[-1]
+                        ResumePlayback(time_position)
+
+
     else:
         if Amount == 'All' or Amount == 'all':
             Amount = 1000
@@ -273,6 +362,8 @@ def PlaySearch(videoname):
             try:
                 url = info['formats'][0]['url']
                 CurrentVideo = info['title']
+                activity.state = f"Playing: {CurrentVideo}"
+                activity_manager.update_activity(activity, callback)
                 CurrentURL = info['formats'][0]['url']
             except Exception as e:
                 NotificationWindow(text=f'Error: {e} (Most likely ran out of videos)',nclass='Warning')
@@ -285,13 +376,30 @@ def PlaySearch(videoname):
                 imagelabel.configure(image = photo)
             if EqualizerCheck:
                 #cmd = f'ffmpeg -i "{url}" -vn -acodec libopus -b:a 96k -f opus -nostdin - | ffplay -nodisp -autoexit -'
-                cmd = f'ffmpeg -i "{url}" -vn -af "equalizer=f=60:width_type=h:width=50:g={Bass},equalizer=f=8000:width_type=h:width=50:g={Treble}" -acodec libopus -b:a 96k -f opus -nostdin - -progress {progress_path} | ffplay -nodisp -autoexit -'
+                cmd = f'ffmpeg -i "{url}" -vn -af "equalizer=f=60:width_type=h:width=50:g={Bass},equalizer=f=8000:width_type=h:width=50:g={Treble}" -acodec libopus -b:a 96k -f opus -nostdin - -progress {progress_path} 2> {error_path} | ffplay -nodisp -autoexit -'
                 #cmd = f'ffmpeg -i "{url}" -vn -acodec libopus -b:a 96k -f opus -nostdin - -progress {progress_path} | ffplay -nodisp -autoexit -'
             else:
-                cmd = f'ffmpeg -i "{url}" -vn -acodec libopus -b:a 96k -f opus -nostdin - -progress {progress_path} | ffplay -nodisp -autoexit -'
+                cmd = f'ffmpeg -i "{url}" -vn -acodec libopus -b:a 96k -f opus -nostdin - -progress {progress_path} 2> {error_path} | ffplay -nodisp -autoexit -'
+
             process = subprocess.Popen(cmd, shell=True)
             set_volume(volume)
             process.wait()
+            with open(error_path, 'r') as file:
+                error_output = file.read()
+            with open(error_path, 'w'):
+                pass
+            if 'Error demuxing' in error_output:
+                print('ERROR FOUND')
+                if os.path.exists(progress_path):
+                    with open(progress_path, 'r') as f:
+                        progress_data = f.read()
+                    matches = re.findall(r'time=([0-9:.]+)', progress_data)
+                    if len(matches) > 0:
+                        time_position = matches[-1]
+                        ResumePlayback(time_position)
+
+
+
 
     
 
@@ -353,6 +461,7 @@ def Playlistfunc(videoname):
     global Treble
     global Paused
     global Amount
+    global activity
 
     Label.configure(text='Downloading Stream..')
     if Amount == 'All' or Amount == 'all' or Amount == 0:
@@ -401,15 +510,34 @@ def Playlistfunc(videoname):
                                   size=(250, 200))
                 imagelabel.configure(image = photo)
             CurrentVideo = song['title']
+            activity.state = f"Playing: {CurrentVideo}"
+            activity_manager.update_activity(activity, callback)
             if EqualizerCheck:
-                cmd = f'ffmpeg -i "{url}" -vn -af "equalizer=f=60:width_type=h:width=50:g={Bass},equalizer=f=8000:width_type=h:width=50:g={Treble}" -acodec libopus -b:a 96k -f opus -nostdin - -progress {progress_path} | ffplay -nodisp -autoexit -'
+                cmd = f'ffmpeg -i "{url}" -vn -af "equalizer=f=60:width_type=h:width=50:g={Bass},equalizer=f=8000:width_type=h:width=50:g={Treble}" -acodec libopus -b:a 96k -f opus -nostdin - -progress {progress_path} 2> {error_path} | ffplay -nodisp -autoexit -'
             else:
-                cmd = f'ffmpeg -i "{url}" -vn -acodec libopus -b:a 96k -f opus -nostdin - -progress {progress_path} | ffplay -nodisp -autoexit -'
+                cmd = f'ffmpeg -i "{url}" -vn -acodec libopus -b:a 96k -f opus -nostdin - -progress {progress_path} 2> {error_path} | ffplay -nodisp -autoexit -'
+
             process = subprocess.Popen(cmd, shell=True)
             set_volume(volume)
             labtitle = 'Playing: ', song['title']
             Label.configure(text=labtitle)
             process.wait()
+            with open(error_path, 'r') as file:
+                error_output = file.read()
+            with open(error_path, 'w'):
+                pass
+            if 'Error demuxing' in error_output:
+                print('ERROR FOUND')
+                if os.path.exists(progress_path):
+                    with open(progress_path, 'r') as f:
+                        progress_data = f.read()
+                    matches = re.findall(r'time=([0-9:.]+)', progress_data)
+                    if len(matches) > 0:
+                        time_position = matches[-1]
+                        ResumePlayback(time_position)
+
+
+
 
 
 def Playlistthreadstart():
@@ -587,8 +715,8 @@ def skipfunc():
     global process
     global CurrentURL
     global Paused
+    global InterPaused
     CurrentURL = ''
-    Paused = False
     if process != None:
         try:
             subprocess.check_call(['taskkill', '/F', '/T', '/PID', str(process.pid)])
@@ -596,6 +724,8 @@ def skipfunc():
             print('Process killed')
         except subprocess.CalledProcessError as e:
             print(f"Failed to kill process with pid {process.pid}: {e}")
+    Paused = False
+    InterPaused = False
 
 
 
@@ -879,6 +1009,17 @@ KeyBindthread = threading.Thread(target=KeyBindHandler)
 KeyBindthread.start()
 
 
+def activityhandler():
+    global app
+    while 1:
+        time.sleep(1/10)
+        app.run_callbacks()
+
+
+
+activitythread = threading.Thread(target=activityhandler)
+activitythread.start()
+
+
 ctk.set_appearance_mode("dark")
 root.mainloop()
-
