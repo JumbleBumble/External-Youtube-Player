@@ -26,7 +26,7 @@ activity = dsdk.Activity()
 
 def callback(result):
     if result == dsdk.Result.ok:
-        print("Successfully set the activity!")
+        print("Discord RPC: Successfully set the activity!")
     else:
         raise Exception(result)
 
@@ -176,6 +176,29 @@ VideoEntry.grid(column = 0, row = 2,columnspan=2,sticky="nsew")
 
 ReplayCount = 0
 LastReplay = None
+SavedTime = None
+
+def add_times(time1, time2):
+    time1_parts = time1.split(':')
+    time2_parts = time2.split(':')
+
+    hours1 = int(time1_parts[0])
+    minutes1 = int(time1_parts[1])
+    seconds1 = float(time1_parts[2])
+
+    hours2 = int(time2_parts[0])
+    minutes2 = int(time2_parts[1])
+    seconds2 = float(time2_parts[2])
+
+    total_seconds = (hours1 + hours2) * 3600 + (minutes1 + minutes2) * 60 + seconds1 + seconds2
+
+    hours = int(total_seconds // 3600)
+    minutes = int((total_seconds % 3600) // 60)
+    seconds = total_seconds % 60
+
+    result = f'{hours:02}:{minutes:02}:{seconds:06.3f}'
+    return result
+
 def ResumePlayback(time_positiono):
     global process
     global CurrentVideo
@@ -191,13 +214,13 @@ def ResumePlayback(time_positiono):
     global error_path
     global ReplayCount
     global LastReplay
+    global SavedTime
     if LastReplay == CurrentURL:
         ReplayCount += 1
     else:
         ReplayCount = 0
     LastReplay = CurrentURL
-    print('REPLAYCOUNT----------------------'+str(ReplayCount))
-    if ReplayCount >= 4:
+    if ReplayCount >= 20:
         ReplayCount = 0
         return
     if EqualizerCheck:
@@ -213,19 +236,16 @@ def ResumePlayback(time_positiono):
     with open(error_path, 'w'):
         pass
     if 'Error demuxing' in error_output:
-        print('ERROR FOUND (IN REPLAY FUNC)')
         matches = re.findall(r'time=([0-9:.]+)', error_output)
         if len(matches) > 0:
             time_position = matches[-1]
-            if ReplayCount >= 1:
-                time_split = time_position.split(':')
-                seconds_parts = time_split[2].split(".")
-                seconds_parts[0] = "{:02}".format(int(seconds_parts[0]) + 20)
-                time_split[2] = ".".join(seconds_parts)
-                time_position = ":".join(time_split)
-                ResumePlayback(time_position)
+            if SavedTime != None:
+                time_positiony = add_times(SavedTime,time_position)
+                SavedTime = add_times(SavedTime,time_position)
+                ResumePlayback(time_positiony)
             else:
                 ResumePlayback(time_position)
+
 
 
 
@@ -256,6 +276,7 @@ def PlaySearch(videoname):
     global Paused
     global activity
     global error_path
+    global SavedTime
 
     Label.configure(text='Downloading Stream..')
 
@@ -308,13 +329,14 @@ def PlaySearch(videoname):
             with open(error_path, 'w'):
                 pass
             if 'Error demuxing' in error_output:
-                print('ERROR FOUND')
+                print('DEMUXING ERROR - REPLAYING')
                 if os.path.exists(progress_path):
                     with open(progress_path, 'r') as f:
                         progress_data = f.read()
                     matches = re.findall(r'time=([0-9:.]+)', progress_data)
                     if len(matches) > 0:
                         time_position = matches[-1]
+                        SavedTime = time_position
                         ResumePlayback(time_position)
 
 
@@ -349,7 +371,6 @@ def PlaySearch(videoname):
             with youtube_dl.YoutubeDL(ydl_opts) as ydl:
                 try:
                     info = ydl.extract_info(rurl, download=False)
-                    print(info['title'])
                     title = info['title']
                     Label.configure(text=f'Playing: {title}')
                 except youtube_dl.DownloadError:
@@ -389,13 +410,14 @@ def PlaySearch(videoname):
             with open(error_path, 'w'):
                 pass
             if 'Error demuxing' in error_output:
-                print('ERROR FOUND')
+                print('DEMUXING ERROR - REPLAYING')
                 if os.path.exists(progress_path):
                     with open(progress_path, 'r') as f:
                         progress_data = f.read()
                     matches = re.findall(r'time=([0-9:.]+)', progress_data)
                     if len(matches) > 0:
                         time_position = matches[-1]
+                        SavedTime = time_position
                         ResumePlayback(time_position)
 
 
@@ -462,6 +484,7 @@ def Playlistfunc(videoname):
     global Paused
     global Amount
     global activity
+    global SavedTime
 
     Label.configure(text='Downloading Stream..')
     if Amount == 'All' or Amount == 'all' or Amount == 0:
@@ -527,13 +550,14 @@ def Playlistfunc(videoname):
             with open(error_path, 'w'):
                 pass
             if 'Error demuxing' in error_output:
-                print('ERROR FOUND')
+                print('DEMUXING ERROR - REPLAYING')
                 if os.path.exists(progress_path):
                     with open(progress_path, 'r') as f:
                         progress_data = f.read()
                     matches = re.findall(r'time=([0-9:.]+)', progress_data)
                     if len(matches) > 0:
                         time_position = matches[-1]
+                        SavedTime = time_position
                         ResumePlayback(time_position)
 
 
@@ -822,7 +846,6 @@ def Resumefunc():
         matches = re.findall(r'time=([0-9:.]+)', progress_data)
         if len(matches) > 0:
             time_position = matches[-1]
-            print('Current time position:', time_position)
         #cmd = f'ffmpeg -i "{CurrentURL}" -vn -ss {time_position} -acodec libopus -b:a 96k -f opus -nostdin - -progress progress.txt | ffplay -nodisp -autoexit -'
         if EqualizerCheck:
             cmd = f'ffmpeg -i "{CurrentURL}" -vn -ss {time_position} -af "equalizer=f=60:width_type=h:width=50:g={Bass},equalizer=f=8000:width_type=h:width=50:g={Treble}" -acodec libopus -b:a 96k -f opus -nostdin - -progress {progress_path} | ffplay -nodisp -autoexit -'
