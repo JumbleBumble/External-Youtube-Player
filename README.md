@@ -6,7 +6,7 @@ For release:
 Just extract JExternalYoutubePlayer.zip from releases and run the exe.
 
 For Source:
-Download FFMPEG: https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip
+Download [FFMPEG](https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip)
 Make a folder named 'ffmpeg' in the same directory the source is in.
 Extract the contents of the FFMPEG zip and move the bin folder into the ffmpeg folder you made.
 
