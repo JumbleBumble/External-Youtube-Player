@@ -2,13 +2,17 @@
 
 INSTALLATION INSTRUCTIONS:
 For release: 
-Download FFMPEG: https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip 
-Extract it out of zip and find the bin folder, then move the bin folder into the ffmpeg folder of the release.
+Just extract JExternalYoutubePlayer.zip from releases and run the exe.
 
 For Source:
 Download FFMPEG: https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip
 Make a folder named 'ffmpeg' in the same directory the source is in.
 Extract the contents of the FFMPEG zip and move the bin folder into the ffmpeg folder you made.
+
+Download [Discord Game SDK (2.5.6)](https://dl-game-sdk.discordapp.net/2.5.6/discord_game_sdk.zip).
+Make a folder called 'lib' in the same directory as the source and put the discord_game_sdk.dll in there.
+
+Run the source.
 
 FEATURES:
 
