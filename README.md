@@ -36,6 +36,7 @@ Saving - Currently the Equalizer sliders & volume slider will automatically save
 Keybinds - Right click Stop, Pause, Skip or Resume then press any letter or number to assign it. To use keybinds hold shift then press the key you assigned
 
 Multi Search - You can search for songs by multiple artists or search multiple keywords by seperating keywords with ':'. 
+
 Multi Search Example: `Slipknot:System of a Down:Rage Against the Machine:Metallica:Iron Maiden`
 
 **Audio Filters**
