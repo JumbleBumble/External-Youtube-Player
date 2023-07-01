@@ -16,6 +16,8 @@ import time
 import keyboard
 import sys
 import discordsdk as dsdk
+import random
+import math
 
 app = dsdk.Discord(1108544841647927297, dsdk.CreateFlags.default)
 
@@ -42,7 +44,7 @@ if not any(os.access(os.path.join(path, 'ffmpeg.exe'), os.X_OK) for path in os.e
     os.environ['PATH'] += os.pathsep + os.path.abspath(os.path.join(script_dir, 'ffmpeg', 'bin'))
     os.environ['PATH'] = os.path.abspath(os.path.join(script_dir, 'ffmpeg', 'bin')) + os.pathsep + os.environ['PATH']
 
-
+runfile_path = os.path.join(script_dir,'runfile.txt')
 
 
 
@@ -145,20 +147,21 @@ MainFrame.columnconfigure(3, weight=10)
 MainFrame.columnconfigure(4, weight=10)
 MainFrame.columnconfigure(5, weight=10)
 MainFrame.columnconfigure(6, weight=10)
-MainFrame.rowconfigure(1, weight=10)
-MainFrame.rowconfigure(2, weight=10)
-MainFrame.rowconfigure(3, weight=10)
-MainFrame.rowconfigure(4, weight=10)
-MainFrame.rowconfigure(5, weight=10)
-MainFrame.rowconfigure(6, weight=10)
+MainFrame.rowconfigure(1, weight=1000)
+MainFrame.rowconfigure(2, weight=1)
+MainFrame.rowconfigure(3, weight=1)
+MainFrame.rowconfigure(4, weight=1)
+MainFrame.rowconfigure(5, weight=1)
+MainFrame.rowconfigure(6, weight=1)
 
 #//ANCHOR - LOAD DEFAULT THUMBNAIL
 Label = ctk.CTkLabel(MainFrame,fg_color='#393E46',text_color='white',text='JMusicPlayer')
 Label.grid(column = 0, row = 0,columnspan=2,sticky="nsew")
-ThumbnailFrame = ctk.CTkFrame(MainFrame,fg_color='white',bg_color='white')
+ThumbnailFrame = ctk.CTkFrame(MainFrame,fg_color='#393E46',bg_color='#1E2024')
 ThumbnailFrame.grid(column = 0, row = 1,columnspan=2,sticky="nsew")
 ThumbnailFrame.columnconfigure(0,weight=1000)
 ThumbnailFrame.rowconfigure(0,weight=1000)
+ThumbnailFrame.rowconfigure(1,weight=1000)
 url = "https://blogger.googleusercontent.com/img/a/AVvXsEio-IZp3Tbblg1zP-SmExSXXWnA5U8aHT6t1c_s4K7yOyLSRryqFpCqRz4ucS85OeEsuZL2St9Re59We1iVR0H6ZKenZCv87vNj01Ni1F06ggcKGSe9rrOv3opvUpGfylbKQ8UhnNJ5iZGTlR40GFhBbXcFD0yHuKIPYWEs_xBpbflYaeVSS5jRAgsE=s500"
 with urllib.request.urlopen(url) as u:
     raw_data = u.read()
@@ -168,7 +171,9 @@ storedphoto = ctk.CTkImage(light_image=Image.open(io.BytesIO(raw_data)),
                                   size=(200, 200))
 imagelabel = ctk.CTkLabel(ThumbnailFrame,text='', image = storedphoto,bg_color='#393E46')
 imagelabel.grid(column=0,row=0,sticky="nsew")
-
+imagelabel.columnconfigure(0,weight=1000)
+imagelabel.rowconfigure(0,weight=1000)
+imagelabel.rowconfigure(1,weight=1000)
 
 VideoEntry = ctk.CTkEntry(MainFrame,width=250,placeholder_text="Search/URL")
 VideoEntry.grid(column = 0, row = 2,columnspan=2,sticky="nsew")
@@ -177,6 +182,7 @@ VideoEntry.grid(column = 0, row = 2,columnspan=2,sticky="nsew")
 ReplayCount = 0
 LastReplay = None
 SavedTime = None
+MaxReplays =  20
 
 def add_times(time1, time2):
     time1_parts = time1.split(':')
@@ -199,40 +205,52 @@ def add_times(time1, time2):
     result = f'{hours:02}:{minutes:02}:{seconds:06.3f}'
     return result
 
+
+
+
 def ResumePlayback(time_positiono):
-    global process
-    global CurrentVideo
-    global CurrentURL
-    global playing
-    global volume
-    global progress_path
-    global EqualizerCheck
-    global Bass
-    global Treble
-    global Paused
-    global activity
-    global error_path
-    global ReplayCount
-    global LastReplay
-    global SavedTime
+    global process, CurrentVideo, CurrentURL, playing, volume, progress_path, EqualizerCheck, Bass, Treble, Paused, activity, error_path, ReplayCount, LastReplay, SavedTime, MaxReplays, Nightcore, Compand, Setrate, Ratevalue, Reverb, RevDelay, RevGain, Lofi, Slow, Chiptune, Bitcrush, Bitvalue, Swirl, SwirlDelay, SwirlDepth
     if LastReplay == CurrentURL:
         ReplayCount += 1
     else:
         ReplayCount = 0
     LastReplay = CurrentURL
-    if ReplayCount >= 20:
+    if ReplayCount >= MaxReplays:
         ReplayCount = 0
         return
-    if EqualizerCheck:
-        cmd = f'ffmpeg -i "{CurrentURL}" -vn -ss {time_positiono} -af "equalizer=f=60:width_type=h:width=50:g={Bass},equalizer=f=8000:width_type=h:width=50:g={Treble}" -acodec libopus -b:a 96k -f opus -nostdin - -progress {progress_path} 2> {error_path} | ffplay -nodisp -autoexit -'
-    else:
-        cmd = f'ffmpeg -i "{CurrentURL}" -vn -ss {time_positiono} -acodec libopus -b:a 96k -f opus -nostdin - -progress {progress_path} 2> {error_path} | ffplay -nodisp -autoexit -'
+    cmd = f'ffmpeg -i "{CurrentURL}" -vn -ss {time_positiono}'
 
+    if EqualizerCheck or Nightcore or Chiptune or Slow or Lofi or Reverb or Compand or Setrate or Bitcrush or Swirl:
+        cmd += ' -af "'
+        if EqualizerCheck:
+            cmd += f'equalizer=f=60:width_type=h:width=50:g={Bass},equalizer=f=8000:width_type=h:width=50:g={Treble},'
+        if Nightcore:
+            cmd += 'rubberband=tempo=1.25,'
+        if Chiptune:
+            cmd += 'aresample=8000,asetrate=8000,'
+        if Slow:
+            cmd += 'rubberband=pitch=0.7,asetrate=44100*0.7,'
+        if Lofi:
+            cmd += 'equalizer=f=125:width_type=h:width=200:g=-10,equalizer=f=250:width_type=h:width=200:g=-10,equalizer=f=500:width_type=h:width=200:g=-10,equalizer=f=1000:width_type=h:width=200:g=-10,equalizer=f=2000:width_type=h:width=200:g=-10,equalizer=f=4000:width_type=h:width=200:g=-10,equalizer=f=8000:width_type=h:width=200:g=-10,'
+        if Reverb:
+            cmd += f'aecho={RevGain}:0.9:1000:{RevDelay},'
+        if Compand:
+            cmd += 'compand=0.3|0.8:1|1:-90/-900|-70/-70|-20/-9|0/-3,'
+        if Setrate:
+            cmd += f'asetrate=44100{Ratevalue},'
+        if Bitcrush:
+            cmd += f'acrusher=bits={Bitvalue},'
+        if Swirl:
+            cmd += f'flanger=delay={SwirlDelay}:depth={SwirlDepth},'
+        cmd += '"'
+    
+    cmd += f' -acodec libopus -b:a 96k -f opus -nostdin - -progress {progress_path} 2> {error_path} | ffplay -nodisp -autoexit -'
     process = subprocess.Popen(cmd, shell=True)
     set_volume(volume)
     process.wait()
     with open(error_path, 'r') as file:
         error_output = file.read()
+    time.sleep(0.1)
     with open(error_path, 'w'):
         pass
     if 'Error demuxing' in error_output:
@@ -253,6 +271,7 @@ def ResumePlayback(time_positiono):
 
 
 
+
 #//ANCHOR - PLAYSEARCH
 Amount = 0
 CurrentVideo = None
@@ -260,28 +279,192 @@ CurrentURL = None
 playing = False
 process = None
 Paused = False
+MaxDuration = None
+Nightcore = False
+Compand = False
+Setrate = False
+Ratevalue = '*1.5'
+Reverb = False
+RevDelay = '0.3'
+RevGain = '0.8'
+Lofi = False
+Slow = False
+Chiptune = False
+Bitcrush = False
+Bitvalue = '4'
+Swirl = False
+SwirlDelay = '0.003'
+SwirlDepth = '7'
 def PlaySearch(videoname):
-    global process
-    global imagelabel
-    global photo
-    global Amount
-    global CurrentVideo
-    global CurrentURL
-    global playing
-    global volume
-    global progress_path
-    global EqualizerCheck
-    global Bass
-    global Treble
-    global Paused
-    global activity
-    global error_path
-    global SavedTime
+    global process, imagelabel, photo, Amount, CurrentVideo, CurrentURL, playing, volume, progress_path, EqualizerCheck, Bass, Treble, Paused, activity, error_path, SavedTime, Nightcore, Compand, MaxDuration, Setrate, Ratevalue, Reverb, RevDelay, RevGain, Lofi, Slow, Chiptune, Bitcrush, Bitvalue, Swirl, SwirlDelay, SwirlDepth, runfile_path
+
+    MaxDuration = None
+    Nightcore = False
+    Compand = False
+    Setrate = False
+    Ratevalue = '*1.5'
+    Reverb = False
+    RevDelay = '0.3'
+    RevGain = '0.8'
+    Lofi = False
+    Slow = False
+    Chiptune = False
+    Bitcrush = False
+    Bitvalue = '4'
+    Swirl = False
+    SwirlDelay = '0.003'
+    SwirlDepth = '7'
+
 
     Label.configure(text='Downloading Stream..')
 
+    def shuffle_list(lst):
+        result = lst.copy()
+        random.shuffle(result)
+        return result
+
+    def Handle_Type(videoname):
+        global Compand, MaxDuration, Setrate, Ratevalue, Reverb, RevDelay, RevGain, Lofi, Slow, Chiptune, Bitcrush, Bitvalue, Swirl, SwirlDelay, SwirlDepth, runfile_path
+        if 'jrunfile' in videoname.lower():
+            if '+' in videoname:
+                runsplit = videoname.split('+')
+                runfile_path = os.path.join(script_dir,f'runfile{runsplit[1]}.txt')
+            if os.path.exists(runfile_path):
+                videoname = open(runfile_path,'r').read()
+            else:
+                NotificationWindow(text=f'runfile Not Found. Make sure its located in the same folder as the players exe/source and named runfile.txt',nclass='Warning')
+        if ':' in videoname:
+            Multi = videoname.split(':')
+            resultlist = []
+            for index,name in enumerate(Multi):
+                lenminus = 0
+                if index != 0:
+                    videoname = videoname.replace(':'+name,'')
+                if 'duration' in name:
+                    DurSplit = name.split('=')
+                    lenminus += 1
+                    MaxDuration = int(DurSplit[1])
+                    if MaxDuration < 0:
+                        MaxDuration = 0
+                    continue
+                if 'nightcore' in name:
+                    lenminus += 1
+                    Nightcore = True
+                    continue
+                if 'compand' in name:
+                    lenminus += 1
+                    Compand = True
+                    continue
+                if 'setrate' in name:
+                    if '=' in name:
+                        RateSplit = name.split('=')
+                        Ratevalue = RateSplit[1]
+                    else:
+                        Ratevalue = '*1.5'
+                    lenminus += 1
+                    Setrate = True
+                    continue
+                if 'reverb' in name:
+                    lenminus += 1
+                    if '=' in name:
+                        RevSplit = name.split('=')
+                        if ',' in RevSplit[1]:
+                            RBSplit = RevSplit[1].split(',')
+                            RevGain = RBSplit[0]
+                            if float(RevGain) > 1:
+                                RevGain = '1.0'
+                            if float(RevGain) < 0:
+                                RevGain = '0'
+                            RevDelay = RBSplit[1]
+                            if float(RevDelay) > 1:
+                                RevDelay = '1'
+                            if float(RevDelay) < 0.1:
+                                RevDelay = '0.1'
+                        else:
+                            RevDelay = RevSplit[1]
+                            if float(RevDelay) > 1:
+                                RevDelay = '1'
+                            if float(RevDelay) < 0.1:
+                                RevDelay = '0.1'
+                    Reverb = True
+                    continue
+                if 'lofi' in name:
+                    lenminus += 1
+                    Lofi = True
+                    continue
+                if 'slow' in name:
+                    lenminus += 1
+                    Slow = True
+                    continue
+                if 'chiptune' in name:
+                    lenminus += 1
+                    Chiptune = True
+                    continue
+                if 'bitcrush' in name:
+                    if '=' in name:
+                        bitSplit = name.split('=')
+                        Bitvalue = bitSplit[1]
+                    else:
+                        Bitvalue = '4'
+                    lenminus += 1
+                    Bitcrush = True
+                    continue
+                if 'swirl' in name:
+                    lenminus += 1
+                    if '=' in name:
+                        SwirlSplit = name.split('=')
+                        if ',' in SwirlSplit[1]:
+                            SWSplit = SwirlSplit[1].split(',')
+                            SwirlDelay = SWSplit[0]
+                            SwirlDepth = SWSplit[1]
+                            if float(SwirlDepth) > 10:
+                                SwirlDepth = '10'
+                        else:
+                            SwirlDepth = SwirlSplit[1]
+                            if float(SwirlDepth) > 10:
+                                SwirlDepth = '10'
+                    Swirl = True
+                    continue
+
+                tempresult = YoutubeSearch(name, max_results=math.floor(int(Amount) / (len(Multi)-lenminus))).to_dict()
+                resultlist += tempresult
+                
+            results = shuffle_list(resultlist)
+         
+            return results,videoname
+        else:
+            return False,videoname
+        
+    def get_CMD():
+        cmd = f'ffmpeg -i "{url}" -vn'
+        if EqualizerCheck or Nightcore or Chiptune or Slow or Lofi or Reverb or Compand or Setrate or Bitcrush or Swirl:
+                cmd += ' -af "'
+                if EqualizerCheck:
+                    cmd += f'equalizer=f=60:width_type=h:width=50:g={Bass},equalizer=f=8000:width_type=h:width=50:g={Treble},'
+                if Nightcore:
+                    cmd += 'rubberband=tempo=1.25,'
+                if Chiptune:
+                    cmd += 'aresample=8000,asetrate=8000,'
+                if Slow:
+                    cmd += 'rubberband=pitch=0.7,asetrate=44100*0.7,'
+                if Lofi:
+                    cmd += 'equalizer=f=125:width_type=h:width=200:g=-10,equalizer=f=250:width_type=h:width=200:g=-10,equalizer=f=500:width_type=h:width=200:g=-10,equalizer=f=1000:width_type=h:width=200:g=-10,equalizer=f=2000:width_type=h:width=200:g=-10,equalizer=f=4000:width_type=h:width=200:g=-10,equalizer=f=8000:width_type=h:width=200:g=-10,'
+                if Reverb:
+                    cmd += f'aecho={RevGain}:0.9:1000:{RevDelay},'
+                if Compand:
+                    cmd += 'compand=0.3|0.8:1|1:-90/-900|-70/-70|-20/-9|0/-3,'
+                if Setrate:
+                    cmd += f'asetrate=44100{Ratevalue},'
+                if Bitcrush:
+                    cmd += f'acrusher=bits={Bitvalue},'
+                if Swirl:
+                    cmd += f'flanger=delay={SwirlDelay}:depth={SwirlDepth},'
+                cmd += '"'
+        cmd += f' -acodec libopus -b:a 96k -f opus -nostdin - -progress {progress_path} 2> {error_path} | ffplay -nodisp -autoexit -'
+        return cmd
 
     if Amount == 0:
+        results,videoname=Handle_Type(videoname)
         ydl_opts = {
             'format': 'bestaudio/best',
             'postprocessors': [{
@@ -314,18 +497,13 @@ def PlaySearch(videoname):
                                   dark_image=Image.open(io.BytesIO(raw_data)),
                                   size=(250, 200))
                 imagelabel.configure(image = photo)
-            if EqualizerCheck:
-                #cmd = f'ffmpeg -i "{url}" -vn -acodec libopus -b:a 96k -f opus -nostdin - | ffplay -nodisp -autoexit -'
-                cmd = f'ffmpeg -i "{url}" -vn -af "equalizer=f=60:width_type=h:width=50:g={Bass},equalizer=f=8000:width_type=h:width=50:g={Treble}" -acodec libopus -b:a 96k -f opus -nostdin - -progress {progress_path} 2> {error_path} | ffplay -nodisp -autoexit -'
-                #cmd = f'ffmpeg -i "{url}" -vn -acodec libopus -b:a 96k -f opus -nostdin - -progress {progress_path} | ffplay -nodisp -autoexit -'
-            else:
-                cmd = f'ffmpeg -i "{url}" -vn -acodec libopus -b:a 96k -f opus -nostdin - -progress {progress_path} 2> {error_path} | ffplay -nodisp -autoexit -'
-
+            cmd = get_CMD()
             process = subprocess.Popen(cmd, shell=True)
             set_volume(volume)
             process.wait()
             with open(error_path, 'r') as file:
                 error_output = file.read()
+            time.sleep(0.1)
             with open(error_path, 'w'):
                 pass
             if 'Error demuxing' in error_output:
@@ -343,7 +521,9 @@ def PlaySearch(videoname):
     else:
         if Amount == 'All' or Amount == 'all':
             Amount = 1000
-        results = YoutubeSearch(videoname, max_results=int(Amount)).to_dict()
+        results,videoname = Handle_Type(videoname)
+        if results == False:  
+            results = YoutubeSearch(videoname, max_results=int(Amount)).to_dict()
         playing = True
         for song in results:
             if playing == False:
@@ -352,6 +532,11 @@ def PlaySearch(videoname):
                 time.sleep(0.5)
             if playing == False:
                 return
+            songduration = song['duration']
+            if MaxDuration != None:
+                songdursplit = songduration.split(':')
+                if int(songdursplit[0]) > MaxDuration or len(songdursplit) == 3:
+                    continue
             rurl = f'https://www.youtube.com{song["url_suffix"]}'
             ThumbURL = song['thumbnails'][0]
             with urllib.request.urlopen(ThumbURL) as u:
@@ -395,18 +580,13 @@ def PlaySearch(videoname):
                                   dark_image=Image.open(io.BytesIO(raw_data)),
                                   size=(250, 200))
                 imagelabel.configure(image = photo)
-            if EqualizerCheck:
-                #cmd = f'ffmpeg -i "{url}" -vn -acodec libopus -b:a 96k -f opus -nostdin - | ffplay -nodisp -autoexit -'
-                cmd = f'ffmpeg -i "{url}" -vn -af "equalizer=f=60:width_type=h:width=50:g={Bass},equalizer=f=8000:width_type=h:width=50:g={Treble}" -acodec libopus -b:a 96k -f opus -nostdin - -progress {progress_path} 2> {error_path} | ffplay -nodisp -autoexit -'
-                #cmd = f'ffmpeg -i "{url}" -vn -acodec libopus -b:a 96k -f opus -nostdin - -progress {progress_path} | ffplay -nodisp -autoexit -'
-            else:
-                cmd = f'ffmpeg -i "{url}" -vn -acodec libopus -b:a 96k -f opus -nostdin - -progress {progress_path} 2> {error_path} | ffplay -nodisp -autoexit -'
-
+            cmd = get_CMD()
             process = subprocess.Popen(cmd, shell=True)
             set_volume(volume)
             process.wait()
             with open(error_path, 'r') as file:
                 error_output = file.read()
+            time.sleep(0.1)
             with open(error_path, 'w'):
                 pass
             if 'Error demuxing' in error_output:
@@ -426,11 +606,7 @@ def PlaySearch(videoname):
     
 
 def PlaySearchthreadstart():
-    global process
-    global playing
-    global storedphoto
-    global Paused
-    global InterPaused
+    global process, playing, storedphoto, Paused, InterPaused
     InterPaused = False
     Paused = False
     playing = False
@@ -470,28 +646,106 @@ EditAmountbutton.grid(column = 1, row = 3,padx=1,pady=1,sticky="nsew")
 
 #//ANCHOR - PLAYLIST
 def Playlistfunc(videoname):
-    global process
-    global playing
-    global imagelabel
-    global photo
-    global CurrentVideo
-    global CurrentURL
-    global volume
-    global progress_path
-    global EqualizerCheck
-    global Bass
-    global Treble
-    global Paused
-    global Amount
-    global activity
-    global SavedTime
+    global process, playing, imagelabel, photo, CurrentVideo, CurrentURL, volume, progress_path, EqualizerCheck, Bass, Treble, Paused, Amount, activity, SavedTime, Nightcore, Compand, Setrate, Ratevalue, Reverb, RevDelay, RevGain, Lofi, Slow, Chiptune, Bitcrush, Bitvalue, Swirl, SwirlDelay, SwirlDepth
+
+    Nightcore = False
+    Compand = False
+    Setrate = False
+    Ratevalue = '*1.5'
+    Reverb = False
+    RevDelay = '0.3'
+    RevGain = '0.8'
+    Lofi = False
+    Slow = False
+    Chiptune = False
+    Bitcrush = False
+    Bitvalue = '4'
+    Swirl = False
+    SwirlDelay = '0.003'
+    SwirlDepth = '7'
+
+
+    
 
     Label.configure(text='Downloading Stream..')
     if Amount == 'All' or Amount == 'all' or Amount == 0:
         Amount = 99999999
 
 
-    
+    if ':' in videoname:
+            Multi = videoname.split(':')
+            for index,name in enumerate(Multi):
+                if index != 0 and index != 1:
+                    videoname = videoname.replace(':'+name,'')
+                if 'nightcore' in name:
+                    Nightcore = True
+                    continue
+                if 'compand' in name:
+                    Compand = True
+                    continue
+                if 'setrate' in name:
+                    if '=' in name:
+                        RateSplit = name.split('=')
+                        RateValue = RateSplit[1]
+                    else:
+                        RateValue = '*1.5'
+                    Setrate = True
+                    continue
+                if 'reverb' in name:
+                    if '=' in name:
+                        RevSplit = name.split('=')
+                        if ',' in RevSplit[1]:
+                            RBSplit = RevSplit[1].split(',')
+                            RevGain = RBSplit[0]
+                            if float(RevGain) > 1:
+                                RevGain = '1.0'
+                            if float(RevGain) < 0:
+                                RevGain = '0'
+                            RevDelay = RBSplit[1]
+                            if float(RevDelay) > 1:
+                                RevDelay = '1'
+                            if float(RevDelay) < 0.1:
+                                RevDelay = '0.1'
+                        else:
+                            RevDelay = RevSplit[1]
+                            if float(RevDelay) > 1:
+                                RevDelay = '1'
+                            if float(RevDelay) < 0.1:
+                                RevDelay = '0.1'
+                    Reverb = True
+                    continue
+                if 'lofi' in name:
+                    Lofi = True
+                    continue
+                if 'slow' in name:
+                    Slow = True
+                    continue
+                if 'chiptune' in name:
+                    Chiptune = True
+                    continue
+                if 'bitcrush' in name:
+                    if '=' in name:
+                        bitSplit = name.split('=')
+                        Bitvalue = bitSplit[1]
+                    else:
+                        Bitvalue = '4'
+                    Bitcrush = True
+                    continue
+                if 'swirl' in name:
+                    if '=' in name:
+                        SwirlSplit = name.split('=')
+                        if ',' in SwirlSplit[1]:
+                            SWSplit = SwirlSplit[1].split(',')
+                            SwirlDelay = SWSplit[1]
+                            SwirlDepth = SWSplit[0]
+                            if float(SwirlDepth) > 10:
+                                SwirlDepth = '10'
+                        else:
+                            SwirlDepth = SwirlSplit[0]
+                            if float(SwirlDepth) > 10:
+                                SwirlDepth = '10'
+                    Swirl = True
+                    continue
     ydl_opts = {
         'format': 'bestaudio/best',
         'postprocessors': [{
@@ -535,10 +789,33 @@ def Playlistfunc(videoname):
             CurrentVideo = song['title']
             activity.state = f"Playing: {CurrentVideo}"
             activity_manager.update_activity(activity, callback)
-            if EqualizerCheck:
-                cmd = f'ffmpeg -i "{url}" -vn -af "equalizer=f=60:width_type=h:width=50:g={Bass},equalizer=f=8000:width_type=h:width=50:g={Treble}" -acodec libopus -b:a 96k -f opus -nostdin - -progress {progress_path} 2> {error_path} | ffplay -nodisp -autoexit -'
-            else:
-                cmd = f'ffmpeg -i "{url}" -vn -acodec libopus -b:a 96k -f opus -nostdin - -progress {progress_path} 2> {error_path} | ffplay -nodisp -autoexit -'
+            cmd = f'ffmpeg -i "{url}" -vn'
+    
+            if EqualizerCheck or Nightcore or Chiptune or Slow or Lofi or Reverb or Compand or Setrate or Bitcrush or Swirl:
+                cmd += ' -af "'
+                if EqualizerCheck:
+                    cmd += f'equalizer=f=60:width_type=h:width=50:g={Bass},equalizer=f=8000:width_type=h:width=50:g={Treble},'
+                if Nightcore:
+                    cmd += 'rubberband=tempo=1.25,'
+                if Chiptune:
+                    cmd += 'aresample=8000,asetrate=8000,'
+                if Slow:
+                    cmd += 'rubberband=pitch=0.7,asetrate=44100*0.7,'
+                if Lofi:
+                    cmd += 'equalizer=f=125:width_type=h:width=200:g=-10,equalizer=f=250:width_type=h:width=200:g=-10,equalizer=f=500:width_type=h:width=200:g=-10,equalizer=f=1000:width_type=h:width=200:g=-10,equalizer=f=2000:width_type=h:width=200:g=-10,equalizer=f=4000:width_type=h:width=200:g=-10,equalizer=f=8000:width_type=h:width=200:g=-10,'
+                if Reverb:
+                    cmd += f'aecho={RevGain}:0.9:1000:{RevDelay},'
+                if Compand:
+                    cmd += 'compand=0.3|0.8:1|1:-90/-900|-70/-70|-20/-9|0/-3,'
+                if Setrate:
+                    cmd += f'asetrate=44100{Ratevalue},'
+                if Bitcrush:
+                    cmd += f'acrusher=bits={Bitvalue},'
+                if Swirl:
+                    cmd += f'flanger=delay={SwirlDelay}:depth={SwirlDepth},'
+                cmd += '"'
+            
+            cmd += f' -acodec libopus -b:a 96k -f opus -nostdin - -progress {progress_path} 2> {error_path} | ffplay -nodisp -autoexit -'
 
             process = subprocess.Popen(cmd, shell=True)
             set_volume(volume)
@@ -547,6 +824,7 @@ def Playlistfunc(videoname):
             process.wait()
             with open(error_path, 'r') as file:
                 error_output = file.read()
+            time.sleep(1)
             with open(error_path, 'w'):
                 pass
             if 'Error demuxing' in error_output:
@@ -565,11 +843,7 @@ def Playlistfunc(videoname):
 
 
 def Playlistthreadstart():
-    global process
-    global playing
-    global storedphoto
-    global Paused
-    global InterPaused
+    global process, playing, storedphoto, Paused, InterPaused
     InterPaused = False
     Paused = False
     playing = False
@@ -681,13 +955,7 @@ Downloadbutton.grid(column = 1, row = 4,padx=1,pady=1,sticky="nsew")
 
 #//ANCHOR - STOP
 def stopfunc():
-    global process
-    global playing
-    global label
-    global imagelabel
-    global storedphoto
-    global Paused
-    global InterPaused
+    global process, playing, label, imagelabel, storedphoto, Paused, InterPaused
     Label.configure(text='JMusicPlayer')
     imagelabel.configure(image = storedphoto)
     InterPaused = False
@@ -830,15 +1098,7 @@ Pausebutton.bind('<Button>',PauseSetFocus)
 threado = None
 #//ANCHOR - RESUME
 def Resumefunc():
-    global process
-    global Paused
-    global CurrentURL
-    global progress_path
-    global EqualizerCheck
-    global Bass
-    global Treble
-    global threado
-    global InterPaused
+    global process, playing, imagelabel, photo, CurrentVideo, CurrentURL, volume, progress_path, EqualizerCheck, Bass, Treble, Paused, Amount, activity, SavedTime, Nightcore, Compand, Setrate, Ratevalue, Reverb, RevDelay, RevGain, Lofi, Slow, Chiptune, Bitcrush, Bitvalue, Swirl, SwirlDelay, SwirlDepth, threado, InterPaused
     OldURL = CurrentURL
     if os.path.exists(progress_path) and process == None:
         with open(progress_path, 'r') as f:
@@ -846,13 +1106,50 @@ def Resumefunc():
         matches = re.findall(r'time=([0-9:.]+)', progress_data)
         if len(matches) > 0:
             time_position = matches[-1]
-        #cmd = f'ffmpeg -i "{CurrentURL}" -vn -ss {time_position} -acodec libopus -b:a 96k -f opus -nostdin - -progress progress.txt | ffplay -nodisp -autoexit -'
-        if EqualizerCheck:
-            cmd = f'ffmpeg -i "{CurrentURL}" -vn -ss {time_position} -af "equalizer=f=60:width_type=h:width=50:g={Bass},equalizer=f=8000:width_type=h:width=50:g={Treble}" -acodec libopus -b:a 96k -f opus -nostdin - -progress {progress_path} | ffplay -nodisp -autoexit -'
-        else:
-            cmd = f'ffmpeg -i "{CurrentURL}" -vn -ss {time_position} -acodec libopus -b:a 96k -f opus -nostdin - -progress {progress_path} | ffplay -nodisp -autoexit -'
+        cmd = f'ffmpeg -i "{url}" -vn -ss {time_position}'
+    
+        if EqualizerCheck or Nightcore or Chiptune or Slow or Lofi or Reverb or Compand or Setrate or Bitcrush or Swirl:
+            cmd += ' -af "'
+            if EqualizerCheck:
+                cmd += f'equalizer=f=60:width_type=h:width=50:g={Bass},equalizer=f=8000:width_type=h:width=50:g={Treble},'
+            if Nightcore:
+                cmd += 'rubberband=tempo=1.25,'
+            if Chiptune:
+                cmd += 'aresample=8000,asetrate=8000,'
+            if Slow:
+                cmd += 'rubberband=pitch=0.7,asetrate=44100*0.7,'
+            if Lofi:
+                cmd += 'equalizer=f=125:width_type=h:width=200:g=-10,equalizer=f=250:width_type=h:width=200:g=-10,equalizer=f=500:width_type=h:width=200:g=-10,equalizer=f=1000:width_type=h:width=200:g=-10,equalizer=f=2000:width_type=h:width=200:g=-10,equalizer=f=4000:width_type=h:width=200:g=-10,equalizer=f=8000:width_type=h:width=200:g=-10,'
+            if Reverb:
+                cmd += f'aecho={RevGain}:0.9:1000:{RevDelay},'
+            if Compand:
+                cmd += 'compand=0.3|0.8:1|1:-90/-900|-70/-70|-20/-9|0/-3,'
+            if Setrate:
+                cmd += f'asetrate=44100{Ratevalue},'
+            if Bitcrush:
+                cmd += f'acrusher=bits={Bitvalue},'
+            if Swirl:
+                cmd += f'flanger=delay={SwirlDelay}:depth={SwirlDepth},'
+            cmd += '"'
+        
+        cmd += f' -acodec libopus -b:a 96k -f opus -nostdin - -progress {progress_path} 2> {error_path} | ffplay -nodisp -autoexit -'
         process = subprocess.Popen(cmd, shell=True)
         process.wait()
+        with open(error_path, 'r') as file:
+            error_output = file.read()
+        time.sleep(1)
+        with open(error_path, 'w'):
+            pass
+        if 'Error demuxing' in error_output:
+            print('DEMUXING ERROR - REPLAYING')
+            if os.path.exists(progress_path):
+                with open(progress_path, 'r') as f:
+                    progress_data = f.read()
+                matches = re.findall(r'time=([0-9:.]+)', progress_data)
+                if len(matches) > 0:
+                    time_position = matches[-1]
+                    SavedTime = time_position
+                    ResumePlayback(time_position)
         threado = None
         if not InterPaused:
             Paused = False
@@ -999,14 +1296,7 @@ VideoEntry.bind('<Return>', entrycheck)
 
 
 def KeyBindHandler():
-    global StopKeySet
-    global StopKey
-    global SkipKeySet
-    global SkipKey
-    global PauseKeySet
-    global PauseKey
-    global ResumeKeySet
-    global ResumeKey
+    global StopKeySet, StopKey, SkipKeySet, SkipKey, PauseKeySet, PauseKey, ResumeKeySet, ResumeKey
     while True:
         time.sleep(0.1)
         if StopKey != None and StopKeySet:
@@ -1025,8 +1315,31 @@ def KeyBindHandler():
             if keyboard.is_pressed(f'shift+{ResumeKey}'):
                 Resumefuncthreadstart()
                 time.sleep(1)
+        
+
+class ReplayCountWindow(ctk.CTkToplevel):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        global MaxReplays
+        self.geometry("300x50")
+        self.title('Max Replays')
+        self.entry = ctk.CTkEntry(self, placeholder_text=str(MaxReplays))
+        self.entry.pack()
+        def ButtonSet():
+            global MaxReplays
+            MaxReplays = int(self.entry.get())
+        self.button = ctk.CTkButton(self, text="Set", command=ButtonSet)
+        self.button.pack()
+        self.attributes("-topmost", True)
+        self.focus_force()
+        self.lift()
 
 
+def Replayhotkey():
+    ReplayCountWindow()
+
+
+keyboard.add_hotkey('ctrl+alt+enter', Replayhotkey)
 
 KeyBindthread = threading.Thread(target=KeyBindHandler)
 KeyBindthread.start()
